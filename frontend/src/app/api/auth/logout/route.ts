@@ -7,6 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { splitCookiesString } from 'set-cookie-parser';
 
 const API_URL = process.env['API_URL'] ?? 'http://localhost:4000';
 const API_VERSION = 'v1';
@@ -31,9 +32,11 @@ export async function POST(request: NextRequest) {
     // Propager la suppression des cookies du backend (qui propage clearCookie)
     const setCookieHeader = resBackend.headers.get('set-cookie');
     if (setCookieHeader) {
-      response.headers.set('set-cookie', setCookieHeader);
+      for (const cookie of splitCookiesString(setCookieHeader)) {
+        response.headers.append('Set-Cookie', cookie);
+      }
     } else {
-      response.cookies.delete('refreshToken');
+      response.cookies.set('refreshToken', '', { maxAge: 0, path: '/api/auth' });
     }
 
     return response;
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
     response.cookies.delete('auth_session');
-    response.cookies.delete('refreshToken');
+    response.cookies.set('refreshToken', '', { maxAge: 0, path: '/api/auth' });
     return response;
   }
 }

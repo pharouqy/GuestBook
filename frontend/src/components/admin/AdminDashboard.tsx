@@ -9,12 +9,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import type { PaginatedMessages, MessageDTO } from '@guestbook/shared';
 
 export function AdminDashboard() {
+  const router = useRouter();
   const { accessToken, isLoading: authLoading, isAuthenticated, logout } = useAuth();
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,12 @@ export function AdminDashboard() {
       void fetchMessages();
     }
   }, [isAuthenticated, accessToken, fetchMessages]);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/admin/login?from=/admin');
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   // Action : Approuver un message
   const handleApprove = async (id: string) => {
@@ -126,6 +134,15 @@ export function AdminDashboard() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
         <p className="text-sm text-muted-foreground">Vérification de la session admin...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+        <p className="text-sm text-muted-foreground">Redirection vers la connexion...</p>
       </div>
     );
   }

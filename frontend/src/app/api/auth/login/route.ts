@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { splitCookiesString } from 'set-cookie-parser';
 import type { ApiResponse, AuthTokenDTO } from '@guestbook/shared';
 
 const API_URL = process.env['API_URL'] ?? 'http://localhost:4000';
@@ -33,12 +34,6 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json(data, { status: 200 });
 
-    // Transmettre le cookie refreshToken reçu du backend vers le client
-    const setCookieHeader = resBackend.headers.get('set-cookie');
-    if (setCookieHeader) {
-      response.headers.set('set-cookie', setCookieHeader);
-    }
-
     // Définir le cookie de session court terme pour le Middleware Next.js
     response.cookies.set('auth_session', 'true', {
       httpOnly: false, // Accessible par le Edge Middleware
@@ -47,6 +42,14 @@ export async function POST(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60, // 7 jours (calqué sur le Refresh Token)
       path: '/',
     });
+
+    const setCookieHeader = resBackend.headers.get('set-cookie');
+    if (setCookieHeader) {
+      // Append after response.cookies.set(), otherwise Next can rebuild and drop Set-Cookie.
+      for (const cookie of splitCookiesString(setCookieHeader)) {
+        response.headers.append('Set-Cookie', cookie);
+      }
+    }
 
     return response;
   } catch (error) {

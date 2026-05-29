@@ -20,9 +20,12 @@ import type { AuthTokenDTO, AdminDTO } from '@guestbook/shared';
 import { AdminRepository, AdminCredentials } from './admin.repository';
 
 interface TokenPair {
-  accessToken: AuthTokenDTO;
+  accessToken: string;
+  expiresIn: number;
   refreshToken: string;
 }
+
+type JwtExpiresIn = Exclude<jwt.SignOptions['expiresIn'], undefined>;
 
 export class AuthService {
   constructor(private readonly adminRepository: AdminRepository) {}
@@ -55,20 +58,18 @@ export class AuthService {
     const accessToken = jwt.sign(
       { sub: admin.id, email: admin.email, role: admin.role },
       env.JWT_ACCESS_SECRET,
-      { expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
+      { expiresIn: env.JWT_ACCESS_EXPIRES_IN as JwtExpiresIn },
     );
 
     const refreshToken = jwt.sign(
       { sub: admin.id, type: 'refresh' },
       env.JWT_REFRESH_SECRET,
-      { expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
+      { expiresIn: env.JWT_REFRESH_EXPIRES_IN as JwtExpiresIn },
     );
 
     return {
-      accessToken: {
-        accessToken,
-        expiresIn: 15 * 60, // 900 secondes = 15 minutes
-      },
+      accessToken,
+      expiresIn: 15 * 60, // 900 secondes = 15 minutes
       refreshToken,
     };
   }
@@ -96,7 +97,7 @@ export class AuthService {
       const accessToken = jwt.sign(
         { sub: admin.id, email: admin.email, role: admin.role },
         env.JWT_ACCESS_SECRET,
-        { expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'] },
+        { expiresIn: env.JWT_ACCESS_EXPIRES_IN as JwtExpiresIn },
       );
 
       return { accessToken, expiresIn: 15 * 60 };

@@ -13,9 +13,9 @@ export type FormStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface FormState<T = unknown> {
   status: FormStatus;
-  data?: T;
-  error?: string;
-  fieldErrors?: Record<string, string[]>;
+  data?: T | undefined;
+  error?: string | undefined;
+  fieldErrors?: Record<string, string[]> | undefined;
 }
 
 // ── Pagination ─────────────────────────────────────────────────────────────────

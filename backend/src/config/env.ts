@@ -18,6 +18,7 @@ const envSchema = z.object({
   // Serveur
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().default('4000').transform(Number),
+  API_VERSION: z.string().default('v1'),
 
   // MongoDB
   MONGODB_URI: z.string().url('MONGODB_URI doit être une URL MongoDB valide'),

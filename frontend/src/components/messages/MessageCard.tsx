@@ -46,7 +46,7 @@ function getAvatarColor(name: string): string {
     'bg-cyan-500',
   ];
   const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return colors[hash % colors.length];
+  return colors[hash % colors.length] ?? 'bg-blue-500';
 }
 
 export function MessageCard({ message, adminMode = false }: MessageCardProps) {

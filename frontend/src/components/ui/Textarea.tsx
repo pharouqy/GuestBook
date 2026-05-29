@@ -9,10 +9,10 @@ import { forwardRef, TextareaHTMLAttributes, useId } from 'react';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string;
-  error?: string;
-  hint?: string;
-  showCharCount?: boolean;
-  maxLength?: number;
+  error?: string | undefined;
+  hint?: string | undefined;
+  showCharCount?: boolean | undefined;
+  maxLength?: number | undefined;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(

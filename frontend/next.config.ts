@@ -1,5 +1,11 @@
 import type { NextConfig } from 'next';
 
+const API_URL =
+  process.env.API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:4000';
+const API_VERSION = process.env.API_VERSION ?? 'v1';
+
 const nextConfig: NextConfig = {
   // Rewrites : le frontend proxifie les appels API vers le backend Express
   // En production, le backend est derrière ce proxy — jamais exposé directement
@@ -7,7 +13,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/proxy/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000'}/api/:path*`,
+        destination: `${API_URL}/api/${API_VERSION}/:path*`,
       },
     ];
   },

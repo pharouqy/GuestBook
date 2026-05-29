@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { splitCookiesString } from 'set-cookie-parser';
 import type { ApiResponse, AuthTokenDTO } from '@guestbook/shared';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:4000';
@@ -14,6 +15,8 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           cookie,
+          // Assure-toi que le content-type est correct si le backend l'exige
+          'Content-Type': 'application/json',
         },
       },
     );
@@ -24,25 +27,26 @@ export async function POST(request: NextRequest) {
       status: resBackend.status,
     });
 
-    // ❌ échec refresh → on clean proprement
+    // ❌ Refresh échoué → nettoyage des cookies
     if (!resBackend.ok || !data.success) {
-      response.cookies.set('auth_session', '', { maxAge: 0 });
-      response.cookies.set('refreshToken', '', { maxAge: 0 });
+      response.cookies.set('auth_session', '', { maxAge: 0, path: '/' });
+      response.cookies.set('refreshToken', '', { maxAge: 0, path: '/api/auth' });
       return response;
     }
 
-    // ✅ IMPORTANT : gestion correcte des cookies
-    const setCookie = resBackend.headers.get('set-cookie');
+    // ✅ Forward propre des cookies du backend vers le client
+    const setCookieHeader = resBackend.headers.get('set-cookie');
 
-    if (setCookie) {
-      // Next.js ne gère pas bien les multi-cookies dans headers
-      // donc on évite de forward brut
-      response.headers.append('set-cookie', setCookie);
+    if (setCookieHeader) {
+      const cookies = splitCookiesString(setCookieHeader);
+      for (const c of cookies) {
+        response.headers.append('Set-Cookie', c);
+      }
     }
 
     return response;
   } catch (error) {
-    console.error('BFF Refresh error:', error);
+    console.error('[BFF /refresh] Erreur interne:', error);
 
     return NextResponse.json(
       {
