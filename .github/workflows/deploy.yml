@@ -1,0 +1,82 @@
+name: CD — Deploy to Production
+
+on:
+  push:
+    branches: [main]
+    # Déclenche uniquement si le CI a passé (protection de branche recommandée)
+
+# Concurrence : annule les déploiements en attente si un nouveau push arrive
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false # Ne jamais annuler un déploiement en cours
+
+jobs:
+  # ── Déploiement Backend ────────────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend API
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build --workspace=shared
+          npm run build --workspace=backend
+
+      # Adapter cette étape selon le provider de déploiement choisi
+      # Options courantes : Railway, Render, Fly.io, VPS avec PM2
+      - name: Deploy Backend
+        run: |
+          echo "⚙️ Configurer le déploiement backend ici"
+          echo "Exemples : Railway CLI, Render deploy hook, SSH + PM2"
+        # env:
+        #   RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # ── Déploiement Frontend ───────────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend (Vercel)
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [deploy-backend] # Le frontend dépend du backend disponible
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Vercel CLI est l'option recommandée pour Next.js
+      # Alternative : Netlify, AWS Amplify, Cloudflare Pages
+      - name: Deploy to Vercel
+        run: |
+          echo "⚙️ Configurer le déploiement Vercel ici"
+          echo "npm i -g vercel && vercel --prod --token \$VERCEL_TOKEN"
+        # env:
+        #   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        #   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        #   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # ── Notification de déploiement ────────────────────────────────────────────
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+
+    steps:
+      - name: Deployment Status
+        run: |
+          if [ "${{ needs.deploy-backend.result }}" == "success" ] && [ "${{ needs.deploy-frontend.result }}" == "success" ]; then
+            echo "✅ Déploiement production réussi"
+          else
+            echo "❌ Déploiement échoué — vérifier les logs"
+            exit 1
+          fi

@@ -1,0 +1,53 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "rules": {
+    // TypeScript strict rules
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-misused-promises": "error",
+    "@typescript-eslint/await-thenable": "error",
+
+    // Clean Code rules
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": ["error", "always"],
+    "no-duplicate-imports": "error"
+  },
+  "overrides": [
+    {
+      // Frontend — Next.js specific rules
+      "files": ["frontend/**/*.{ts,tsx}"],
+      "extends": ["plugin:@next/eslint-plugin-next/recommended"],
+      "rules": {
+        "@typescript-eslint/explicit-function-return-type": "off"
+      }
+    },
+    {
+      // Backend — stricter rules
+      "files": ["backend/**/*.ts"],
+      "rules": {
+        "no-console": "error"
+      }
+    },
+    {
+      // Test files — relax some rules
+      "files": ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**/*.ts"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "no-console": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["node_modules/", "dist/", "build/", ".next/", "*.js", "*.mjs"]
+}

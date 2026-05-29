@@ -1,0 +1,160 @@
+name: CI — Lint, Type-check, Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ── Job 1 : Lint & Format ──────────────────────────────────────────────────
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier Check
+        run: npm run format:check
+
+  # ── Job 2 : Type Check ─────────────────────────────────────────────────────
+  type-check:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types first
+        run: npm run build --workspace=shared
+
+      - name: Type check all workspaces
+        run: npm run type-check
+
+  # ── Job 3 : Tests Backend ──────────────────────────────────────────────────
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    # Service MongoDB pour les tests d'intégration
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types
+        run: npm run build --workspace=shared
+
+      - name: Create test .env
+        run: |
+          cat > backend/.env.test << EOF
+          NODE_ENV=test
+          PORT=4001
+          API_VERSION=v1
+          MONGODB_URI=mongodb://localhost:27017/guestbook_ci
+          MONGODB_URI_TEST=mongodb://localhost:27017/guestbook_ci
+          JWT_ACCESS_SECRET=ci-access-secret-minimum-32-characters-long
+          JWT_REFRESH_SECRET=ci-refresh-secret-minimum-32-characters-long
+          JWT_ACCESS_EXPIRES_IN=15m
+          JWT_REFRESH_EXPIRES_IN=7d
+          CORS_ORIGIN=http://localhost:3000
+          RATE_LIMIT_WINDOW_MS=900000
+          RATE_LIMIT_MAX_REQUESTS=1000
+          LOG_LEVEL=silent
+          EOF
+
+      - name: Run tests with coverage
+        run: npm run test:coverage --workspace=backend
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+
+  # ── Job 4 : Build Frontend ─────────────────────────────────────────────────
+  build-frontend:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: [lint, type-check]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared types
+        run: npm run build --workspace=shared
+
+      - name: Create frontend .env.local
+        run: |
+          cat > frontend/.env.local << EOF
+          API_URL=http://localhost:4000
+          NEXT_PUBLIC_APP_NAME=Livre d'Or
+          NEXT_PUBLIC_APP_URL=http://localhost:3000
+          EOF
+
+      - name: Build Next.js
+        run: npm run build --workspace=frontend
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: frontend/.next/
+          retention-days: 7
