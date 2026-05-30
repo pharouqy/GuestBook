@@ -45,14 +45,17 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 
-// Validation au chargement du module
-const parseResult = envSchema.safeParse(process.env);
+function loadEnv(): z.infer<typeof envSchema> {
+  const parseResult = envSchema.safeParse(process.env);
 
-if (!parseResult.success) {
-  console.error('❌ Variables d\'environnement invalides :');
-  console.error(parseResult.error.flatten().fieldErrors);
-  process.exit(1);
+  if (!parseResult.success) {
+    console.error('❌ Variables d\'environnement invalides :');
+    console.error(parseResult.error.flatten().fieldErrors);
+    process.exit(1);
+  }
+
+  return parseResult.data;
 }
 
-export const env = parseResult.data;
+export const env = loadEnv();
 export type Env = typeof env;
