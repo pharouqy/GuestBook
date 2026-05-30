@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { createMessageFormSchema, type CreateMessageFormValues } from '@/lib/validations';
-import { apiClient, ApiError } from '@/lib/api';
+import { browserApiClient, ApiError } from '@/lib/api';
 import type { MessageDTO } from '@guestbook/shared';
 
 type FormErrors = Partial<Record<keyof CreateMessageFormValues, string>>;
@@ -57,7 +57,7 @@ export function MessageForm() {
     setApiError(null);
 
     try {
-      await apiClient.post<MessageDTO>('/messages', values);
+      await browserApiClient.post<MessageDTO>('/messages', values);
       setStatus('success');
       setValues({ author: '', content: '' }); // Reset
     } catch (error) {

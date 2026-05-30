@@ -10,12 +10,17 @@
  * 
  * USAGE (Server Component) :
  *   const messages = await apiClient.get<PaginatedMessages>('/messages');
+ *
+ * USAGE (Client Component) :
+ *   await browserApiClient.post('/messages', values);
  */
 
 import type { ApiResponse, ApiSuccessResponse } from '@guestbook/shared';
 
 // API_URL n'est disponible que côté serveur (pas de NEXT_PUBLIC_)
 const API_BASE_URL = process.env['API_URL'] ?? 'http://localhost:4000';
+// Proxy Next.js — même origine, pas d'appel direct au backend depuis le navigateur
+const BROWSER_PROXY_BASE = '/api/proxy';
 const API_VERSION = 'v1';
 
 export class ApiError extends Error {
@@ -38,7 +43,11 @@ interface RequestOptions extends RequestInit {
   };
 }
 
-async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+async function request<T>(
+  endpoint: string,
+  options: RequestOptions = {},
+  baseUrl: string = API_BASE_URL,
+): Promise<T> {
   const { token, ...fetchOptions } = options;
 
   const headers: HeadersInit = {
@@ -47,7 +56,10 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     ...fetchOptions.headers,
   };
 
-  const url = `${API_BASE_URL}/api/${API_VERSION}${endpoint}`;
+  const url =
+    baseUrl === BROWSER_PROXY_BASE
+      ? `${BROWSER_PROXY_BASE}${endpoint}`
+      : `${baseUrl}/api/${API_VERSION}${endpoint}`;
 
   const requestInit: RequestOptions = {
     ...fetchOptions,
@@ -96,4 +108,27 @@ export const apiClient = {
 
   delete: <T = void>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { method: 'DELETE', ...options }),
+};
+
+/** Client HTTP pour les Client Components — passe par le proxy Next.js (BFF). */
+export const browserApiClient = {
+  get: <T>(endpoint: string, options?: RequestOptions) =>
+    request<T>(endpoint, { method: 'GET', ...options }, BROWSER_PROXY_BASE),
+
+  post: <T>(endpoint: string, body: unknown, options?: RequestOptions) =>
+    request<T>(
+      endpoint,
+      { method: 'POST', body: JSON.stringify(body), ...options },
+      BROWSER_PROXY_BASE,
+    ),
+
+  patch: <T>(endpoint: string, body: unknown, options?: RequestOptions) =>
+    request<T>(
+      endpoint,
+      { method: 'PATCH', body: JSON.stringify(body), ...options },
+      BROWSER_PROXY_BASE,
+    ),
+
+  delete: <T = void>(endpoint: string, options?: RequestOptions) =>
+    request<T>(endpoint, { method: 'DELETE', ...options }, BROWSER_PROXY_BASE),
 };
