@@ -7,6 +7,7 @@
  */
 
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { LoginForm } from '@/components/admin/LoginForm';
 
 export const metadata: Metadata = {
@@ -40,7 +41,9 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Formulaire interactif */}
-        <LoginForm />
+        <Suspense fallback={<LoginFormFallback />}>
+          <LoginForm />
+        </Suspense>
 
         {/* Informations de base */}
         <div className="rounded-lg border-2 border-border/50 bg-muted/20 p-4 text-center">
@@ -49,6 +52,22 @@ export default function AdminLoginPage() {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LoginFormFallback() {
+  return (
+    <div className="space-y-6 rounded-2xl border-2 border-border/50 bg-gradient-to-br from-card to-card/50 p-10 shadow-elevated backdrop-blur-md">
+      <div className="space-y-2 text-center">
+        <div className="mx-auto h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="mx-auto h-4 w-64 max-w-full animate-pulse rounded bg-muted" />
+      </div>
+      <div className="space-y-5">
+        <div className="h-20 animate-pulse rounded-lg bg-muted" />
+        <div className="h-20 animate-pulse rounded-lg bg-muted" />
+      </div>
+      <div className="h-12 animate-pulse rounded-lg bg-muted" />
     </div>
   );
 }

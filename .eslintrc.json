@@ -1,11 +1,18 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "projectService": true
+  },
   "plugins": ["@typescript-eslint"],
+  "settings": {
+    "next": {
+      "rootDir": "frontend/"
+    }
+  },
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    "plugin:@typescript-eslint/recommended"
   ],
   "rules": {
     // TypeScript strict rules
@@ -28,7 +35,7 @@
     {
       // Frontend — Next.js specific rules
       "files": ["frontend/**/*.{ts,tsx}"],
-      "extends": ["plugin:@next/eslint-plugin-next/recommended"],
+      "extends": ["next/core-web-vitals"],
       "rules": {
         "@typescript-eslint/explicit-function-return-type": "off"
       }

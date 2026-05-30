@@ -250,7 +250,9 @@ export function AdminDashboard() {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => handleApprove(message.id)}
+                    onClick={() => {
+                      void handleApprove(message.id);
+                    }}
                     className="flex-1"
                   >
                     ✓ Approuver
@@ -259,7 +261,9 @@ export function AdminDashboard() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleDelete(message.id)}
+                  onClick={() => {
+                    void handleDelete(message.id);
+                  }}
                   className="flex-1"
                 >
                   🗑️ Supprimer
