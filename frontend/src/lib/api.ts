@@ -32,6 +32,10 @@ export class ApiError extends Error {
 
 interface RequestOptions extends RequestInit {
   token?: string; // Access token JWT (pour les requêtes admin)
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
 }
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
@@ -45,13 +49,18 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   const url = `${API_BASE_URL}/api/${API_VERSION}${endpoint}`;
 
-  const response = await fetch(url, {
+  const requestInit: RequestOptions = {
     ...fetchOptions,
     headers,
-    // Next.js cache : no-store par défaut pour les données dynamiques
-    // Les Server Components peuvent surcharger avec { next: { revalidate: 60 } }
-    cache: fetchOptions.cache ?? 'no-store',
-  });
+  };
+
+  // Next.js cache : no-store par défaut pour les données dynamiques.
+  // Les Server Components peuvent surcharger avec { next: { revalidate: 60 } }.
+  if (requestInit.cache === undefined && !requestInit.next) {
+    requestInit.cache = 'no-store';
+  }
+
+  const response = await fetch(url, requestInit);
 
   const json = (await response.json()) as ApiResponse<T>;
 

@@ -29,7 +29,9 @@ export default async function HomePage() {
   let error: string | null = null;
 
   try {
-    data = await apiClient.get<PaginatedMessages>('/messages?page=1&limit=10');
+    data = await apiClient.get<PaginatedMessages>('/messages?page=1&limit=10', {
+      next: { revalidate },
+    });
   } catch (err) {
     // En SSR, on gère l'erreur gracefully (pas de crash de la page)
     error = 'Impossible de charger les messages pour le moment.';

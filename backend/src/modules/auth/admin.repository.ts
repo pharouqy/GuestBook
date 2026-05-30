@@ -6,7 +6,7 @@
  * Il convertit les Documents Mongoose en types TypeScript purs et isolés.
  */
 
-import { AdminModel, IAdmin } from './admin.model';
+import { AdminModel } from './admin.model';
 
 export interface AdminCredentials {
   id: string;
@@ -15,7 +15,14 @@ export interface AdminCredentials {
   role: 'admin';
 }
 
-function toCredentials(doc: IAdmin): AdminCredentials {
+interface AdminRecord {
+  _id: { toString(): string };
+  email: string;
+  passwordHash: string;
+  role: 'admin';
+}
+
+function toCredentials(doc: AdminRecord): AdminCredentials {
   return {
     id: doc._id.toString(),
     email: doc.email,
@@ -31,7 +38,7 @@ export class AdminRepository {
   async findByEmail(email: string): Promise<AdminCredentials | null> {
     const doc = await AdminModel.findOne({ email: email.toLowerCase() }).lean();
     if (!doc) return null;
-    return toCredentials(doc as IAdmin);
+    return toCredentials(doc);
   }
 
   /**
@@ -40,7 +47,7 @@ export class AdminRepository {
   async findById(id: string): Promise<AdminCredentials | null> {
     const doc = await AdminModel.findById(id).lean();
     if (!doc) return null;
-    return toCredentials(doc as IAdmin);
+    return toCredentials(doc);
   }
 
   /**

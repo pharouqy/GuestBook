@@ -9,14 +9,22 @@
  * AVANTAGE : Pour migrer de MongoDB vers PostgreSQL, on ne touche QUE ce fichier.
  */
 
-import { MessageModel, IMessage } from './message.model';
+import { MessageModel } from './message.model';
 import type { MessageDTO, CreateMessagePayload, PaginatedMessages } from '@guestbook/shared';
+
+interface MessageRecord {
+  _id: { toString(): string };
+  author: string;
+  content: string;
+  createdAt: Date;
+  isApproved: boolean;
+}
 
 /**
  * Convertit un Document Mongoose en DTO sérialisable
  * (évite d'exposer les internals Mongoose au Service)
  */
-function toDTO(doc: IMessage): MessageDTO {
+function toDTO(doc: MessageRecord): MessageDTO {
   return {
     id: doc._id.toString(),
     author: doc.author,
@@ -38,7 +46,7 @@ export class MessageRepository {
     ]);
 
     return {
-      messages: messages.map((m) => toDTO(m as IMessage)),
+      messages: messages.map((m) => toDTO(m)),
       pagination: {
         total,
         page,
@@ -58,7 +66,7 @@ export class MessageRepository {
     ]);
 
     return {
-      messages: messages.map((m) => toDTO(m as IMessage)),
+      messages: messages.map((m) => toDTO(m)),
       pagination: {
         total,
         page,
@@ -72,7 +80,7 @@ export class MessageRepository {
   async findById(id: string): Promise<MessageDTO | null> {
     const doc = await MessageModel.findById(id).lean();
     if (!doc) return null;
-    return toDTO(doc as IMessage);
+    return toDTO(doc);
   }
 
   /** Crée un nouveau message (non approuvé par défaut) */
@@ -93,7 +101,7 @@ export class MessageRepository {
       { new: true, runValidators: true },
     ).lean();
     if (!doc) return null;
-    return toDTO(doc as IMessage);
+    return toDTO(doc);
   }
 
   /** Supprime un message */
