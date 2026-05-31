@@ -13,7 +13,8 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
-  // Métadonnées spécifiques aux pages publiques
+  title: "Livre d'Or | Accueil",
+  description: "Découvrez les messages laissés par nos visiteurs.",
 };
 
 export default function PublicLayout({

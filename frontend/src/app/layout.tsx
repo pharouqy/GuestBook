@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   },
 };
 
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import ThemeInitializer from '@/components/ui/ThemeInitializer';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,7 +37,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={inter.variable}>
-      <body className="min-h-screen bg-background font-sans antialiased">{children}</body>
+      <body className="min-h-screen bg-background font-sans antialiased">
+        <ThemeInitializer />
+        <ThemeToggle className="fixed top-4 right-4 z-50" />
+        {children}
+      </body>
     </html>
   );
 }

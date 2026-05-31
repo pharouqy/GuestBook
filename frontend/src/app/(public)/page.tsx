@@ -1,41 +1,74 @@
-/**
- * @file app/(public)/page.tsx
- * @description Page d'accueil — Liste des messages du livre d'or.
- * 
- * SERVER COMPONENT : fetch côté serveur → zéro JS pour l'affichage initial.
- * SEO : Le HTML est complet à la première requête (liste des messages visible).
- * 
- * Architecture de fetch :
- * Server Component → apiClient.get() → Express API (port 4000)
- * Le secret API_URL reste sur le serveur Next.js.
- */
+'use client';
 
-import type { Metadata } from 'next';
+import { useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api';
 import { MessageForm } from '@/components/messages/MessageForm';
 import { MessageCard } from '@/components/messages/MessageCard';
 import type { PaginatedMessages } from '@guestbook/shared';
 
-export const metadata: Metadata = {
-  title: "Livre d'Or | Accueil",
-  description: "Découvrez les messages laissés par nos visiteurs.",
-};
+export default function HomePage() {
+  const searchParams = useSearchParams();
+  const pageParam = searchParams.get('page');
+  const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
+  const limit = 10;
 
-// Revalidation toutes les 60 secondes (ISR — Incremental Static Regeneration)
-export const revalidate = 60;
+  const [data, setData] = useState<PaginatedMessages | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
-export default async function HomePage() {
-  let data: PaginatedMessages | null = null;
-  let error: string | null = null;
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await apiClient.get<PaginatedMessages>(
+          `/messages?page=${page}&limit=${limit}`,
+          { next: { revalidate: 60 } }
+        );
+        if (!cancelled) {
+          setData(res);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError('Impossible de charger les messages pour le moment.');
+          console.warn('Fetch messages failed:', err);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
 
-  try {
-    data = await apiClient.get<PaginatedMessages>('/messages?page=1&limit=10', {
-      next: { revalidate },
-    });
-  } catch (err) {
-    // En SSR, on gère l'erreur gracefully (pas de crash de la page)
-    error = 'Impossible de charger les messages pour le moment.';
-    console.warn('Fetch messages failed:', err);
+    fetchData();
+    return () => {
+      cancelled = true;
+    };
+  }, [page, limit]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center py-12">
+        <div className="animate-pulse rounded bg-primary/20 p-8">
+          <h2 className="text-2xl font-bold text-foreground">Chargement des messages…</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto flex flex-col items-center gap-3 rounded-lg border-2 border-destructive/30 bg-destructive/5 p-6">
+        <p className="text-lg font-semibold text-destructive">⚠️ Erreur</p>
+        <p className="text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null; // Should not happen
   }
 
   return (
@@ -44,7 +77,7 @@ export default async function HomePage() {
       <section className="relative space-y-6 text-center py-12">
         {/* Décoration */}
         <div className="absolute -inset-20 -z-10 rounded-3xl bg-gradient-to-br from-primary/5 to-accent/5 blur-2xl" />
-        
+
         <div className="space-y-3">
           <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-foreground">
             📖 Livre d&apos;Or
@@ -65,8 +98,8 @@ export default async function HomePage() {
             <div className="text-xs text-muted-foreground">Approuvés</div>
           </div>
           <div className="rounded-lg bg-accent/5 border border-accent/20 px-4 py-3">
-            <div className="text-2xl font-bold text-accent">100%</div>
-            <div className="text-xs text-muted-foreground">Modérés</div>
+            <div className="text-2xl font-bold text-accent">{data?.pagination.totalPages || 0}</div>
+            <div className="text-xs text-muted-foreground">Pages</div>
           </div>
         </div>
       </section>
@@ -88,25 +121,57 @@ export default async function HomePage() {
 
       {/* Liste des messages */}
       <section aria-label="Messages du livre d'or" className="space-y-4">
-        {error ? (
-          <div className="max-w-2xl mx-auto flex flex-col items-center gap-3 rounded-lg border-2 border-destructive/30 bg-destructive/5 p-6">
-            <p className="text-lg font-semibold text-destructive">⚠️ Erreur</p>
-            <p className="text-muted-foreground">{error}</p>
-          </div>
-        ) : data?.messages.length === 0 ? (
+        {data?.messages.length === 0 ? (
           <div className="max-w-2xl mx-auto flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/30 p-12">
             <p className="text-5xl" role="img">📝</p>
             <p className="font-semibold text-lg text-foreground">Aucun message pour le moment</p>
             <p className="text-sm text-muted-foreground">Soyez le premier à laisser un message dans ce livre d'or !</p>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto grid gap-4 sm:grid-cols-1 md:grid-cols-2">
-            {data?.messages.map((message, index) => (
-              <div key={message.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-fade-in">
-                <MessageCard message={message} />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="max-w-4xl mx-auto grid gap-4 sm:grid-cols-1 md:grid-cols-2">
+              {data?.messages.map((message, index) => (
+                <div key={message.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-fade-in">
+                  <MessageCard message={message} />
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="mt-8 flex justify-center items-center space-x-4">
+              <button
+                onClick={() => {
+                  const newPage = Math.max(1, page - 1);
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('page', newPage.toString());
+                  window.history.replaceState(null, '', `?${params.toString()}`);
+                }}
+                disabled={page <= 1}
+                className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
+                aria-label="Page précédente"
+              >
+                ‹
+              </button>
+
+              <span className="px-4 text-sm font-medium text-foreground">
+                Page {page} sur {data?.pagination.totalPages ?? 0}
+              </span>
+
+              <button
+                onClick={() => {
+                  const newPage = page + 1;
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set('page', newPage.toString());
+                  window.history.replaceState(null, '', `?${params.toString()}`);
+                }}
+                disabled={page >= (data?.pagination.totalPages ?? 1)}
+                className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
+                aria-label="Page suivante"
+              >
+                ›
+              </button>
+            </div>
+          </>
         )}
       </section>
     </div>
