@@ -7,7 +7,7 @@
  * 
  * USAGE :
  *   const { state, submit, reset } = useFormState(async (data) => {
- *     await apiClient.post('/messages', data);
+ *     await browserApiClient.post('/messages', data);
  *   });
  */
 

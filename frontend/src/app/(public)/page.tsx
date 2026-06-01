@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
-import { apiClient } from '@/lib/api';
+import { browserApiClient } from '@/lib/api';
 import { MessageForm } from '@/components/messages/MessageForm';
 import { MessageCard } from '@/components/messages/MessageCard';
 import type { PaginatedMessages } from '@guestbook/shared';
@@ -25,7 +25,7 @@ function HomePageInner() {
       setLoading(true);
       setError(null);
       try {
-        const res = await apiClient.get<PaginatedMessages>(
+        const res = await browserApiClient.get<PaginatedMessages>(
           `/messages?page=${page}&limit=${limit}`,
           { next: { revalidate: 60 } }
         );
