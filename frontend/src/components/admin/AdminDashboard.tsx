@@ -24,7 +24,7 @@ export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved'>('pending');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10); // 10 items per page
+  const limit = 10; // 10 items per page
 
   // Récupérer les messages paginés depuis l'API Express (via le proxy Next.js)
   const fetchMessages = useCallback(async () => {
@@ -218,97 +218,99 @@ export function AdminDashboard() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
-          {filteredMessages.map((message, index) => (
-            <article
-              key={message.id}
-              className={`flex flex-col justify-between rounded-2xl border-2 bg-card p-6 shadow-medium transition-all duration-300 hover:shadow-elevated hover:border-primary/50 animate-fade-in`}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {/* Header du message */}
-              <div className="space-y-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <p className="font-bold text-foreground text-lg">{message.author}</p>
-                    <time className="text-xs font-medium text-muted-foreground mt-0.5">
-                      {new Date(message.createdAt).toLocaleString('fr-FR', {
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </time>
+        <>
+          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+            {filteredMessages.map((message, index) => (
+              <article
+                key={message.id}
+                className={`flex flex-col justify-between rounded-2xl border-2 bg-card p-6 shadow-medium transition-all duration-300 hover:shadow-elevated hover:border-primary/50 animate-fade-in`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                {/* Header du message */}
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="font-bold text-foreground text-lg">{message.author}</p>
+                      <time className="text-xs font-medium text-muted-foreground mt-0.5">
+                        {new Date(message.createdAt).toLocaleString('fr-FR', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </time>
+                    </div>
+                    <Badge variant={message.isApproved ? 'success' : 'warning'}>
+                      {message.isApproved ? '✅ Approuvé' : '⏳ Attente'}
+                    </Badge>
                   </div>
-                  <Badge variant={message.isApproved ? 'success' : 'warning'}>
-                    {message.isApproved ? '✅ Approuvé' : '⏳ Attente'}
-                  </Badge>
+                  <blockquote className="text-foreground/85 text-sm leading-relaxed border-l-4 border-primary/20 pl-4 py-1">
+                    "{message.content}"
+                  </blockquote>
                 </div>
-                <blockquote className="text-foreground/85 text-sm leading-relaxed border-l-4 border-primary/20 pl-4 py-1">
-                  "{message.content}"
-                </blockquote>
-              </div>
 
-              {/* Actions */}
-              <div className="mt-6 flex items-center gap-2 border-t-2 border-border/50 pt-4">
-                {!message.isApproved && (
+                {/* Actions */}
+                <div className="mt-6 flex items-center gap-2 border-t-2 border-border/50 pt-4">
+                  {!message.isApproved && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        void handleApprove(message.id);
+                      }}
+                      className="flex-1"
+                    >
+                      ✓ Approuver
+                    </Button>
+                  )}
                   <Button
-                    variant="primary"
+                    variant="outline"
                     size="sm"
                     onClick={() => {
-                      void handleApprove(message.id);
+                      void handleDelete(message.id);
                     }}
                     className="flex-1"
                   >
-                    ✓ Approuver
+                    🗑️ Supprimer
                   </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    void handleDelete(message.id);
-                  }}
-                  className="flex-1"
-                >
-                  🗑️ Supprimer
-                </Button>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex justify-center items-center space-x-4">
-            <button
-              onClick={() => {
-                const newPage = Math.max(1, currentPage - 1);
-                setCurrentPage(newPage);
-              }}
-              disabled={currentPage <= 1}
-              className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
-              aria-label="Page précédente"
-            >
-              ‹
-            </button>
-
-            <span className="px-4 text-sm font-medium text-foreground">
-              Page {currentPage} sur {totalPages}
-            </span>
-
-            <button
-              onClick={() => {
-                const newPage = Math.min(totalPages, currentPage + 1);
-                setCurrentPage(newPage);
-              }}
-              disabled={currentPage >= totalPages}
-              className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
-              aria-label="Page suivante"
-            >
-              ›
-            </button>
+                </div>
+              </article>
+            ))}
           </div>
-        )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex justify-center items-center space-x-4">
+              <button
+                onClick={() => {
+                  const newPage = Math.max(1, currentPage - 1);
+                  setCurrentPage(newPage);
+                }}
+                disabled={currentPage <= 1}
+                className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
+                aria-label="Page précédente"
+              >
+                ‹
+              </button>
+
+              <span className="px-4 text-sm font-medium text-foreground">
+                Page {currentPage} sur {totalPages}
+              </span>
+
+              <button
+                onClick={() => {
+                  const newPage = Math.min(totalPages, currentPage + 1);
+                  setCurrentPage(newPage);
+                }}
+                disabled={currentPage >= totalPages}
+                className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
+                aria-label="Page suivante"
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
