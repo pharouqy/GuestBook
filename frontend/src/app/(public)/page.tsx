@@ -1,13 +1,15 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { apiClient } from '@/lib/api';
 import { MessageForm } from '@/components/messages/MessageForm';
 import { MessageCard } from '@/components/messages/MessageCard';
 import type { PaginatedMessages } from '@guestbook/shared';
 
-export default function HomePage() {
+function HomePageInner() {
   const searchParams = useSearchParams();
   const pageParam = searchParams.get('page');
   const page = pageParam ? Math.max(1, parseInt(pageParam, 10)) : 1;
@@ -175,5 +177,17 @@ export default function HomePage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex flex-col items-center justify-center py-12">
+      <div className="animate-pulse rounded bg-primary/20 p-8">
+        <h2 className="text-2xl font-bold text-foreground">Chargement des messages…</h2>
+      </div>
+    </div>}>
+      <HomePageInner />
+    </Suspense>
   );
 }
