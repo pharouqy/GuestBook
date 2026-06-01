@@ -22,8 +22,11 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved'>('pending');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10); // 10 items per page
 
-  // Récupérer la liste complète des messages depuis l'API Express (via le proxy Next.js)
+  // Récupérer les messages paginés depuis l'API Express (via le proxy Next.js)
   const fetchMessages = useCallback(async () => {
     if (!accessToken) return;
 
@@ -31,7 +34,7 @@ export function AdminDashboard() {
     setError(null);
 
     try {
-      const res = await fetch('/api/proxy/admin/messages?page=1&limit=50', {
+      const res = await fetch(`/api/proxy/admin/messages?page=${currentPage}&limit=${limit}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -44,6 +47,7 @@ export function AdminDashboard() {
       const body = (await res.json()) as { success: boolean; data: PaginatedMessages };
       if (body.success) {
         setMessages(body.data.messages);
+        setTotalPages(body.data.pagination.totalPages);
       } else {
         throw new Error('Échec du chargement des données.');
       }
@@ -53,14 +57,14 @@ export function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, currentPage, limit]);
 
-  // Charger au montage et quand le token change
+  // Charger au montage, quand le token change, ou quand la page/limit change
   useEffect(() => {
     if (isAuthenticated && accessToken) {
       void fetchMessages();
     }
-  }, [isAuthenticated, accessToken, fetchMessages]);
+  }, [isAuthenticated, accessToken, fetchMessages, currentPage, limit]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -272,6 +276,39 @@ export function AdminDashboard() {
             </article>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex justify-center items-center space-x-4">
+            <button
+              onClick={() => {
+                const newPage = Math.max(1, currentPage - 1);
+                setCurrentPage(newPage);
+              }}
+              disabled={currentPage <= 1}
+              className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
+              aria-label="Page précédente"
+            >
+              ‹
+            </button>
+
+            <span className="px-4 text-sm font-medium text-foreground">
+              Page {currentPage} sur {totalPages}
+            </span>
+
+            <button
+              onClick={() => {
+                const newPage = Math.min(totalPages, currentPage + 1);
+                setCurrentPage(newPage);
+              }}
+              disabled={currentPage >= totalPages}
+              className="p-2 rounded hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary transition-colors disabled:opacity-50"
+              aria-label="Page suivante"
+            >
+              ›
+            </button>
+          </div>
+        )}
       )}
     </div>
   );
