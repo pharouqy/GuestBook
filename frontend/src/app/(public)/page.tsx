@@ -42,7 +42,7 @@ export default function HomePage() {
       }
     }
 
-    fetchData();
+    void fetchData();
     return () => {
       cancelled = true;
     };
